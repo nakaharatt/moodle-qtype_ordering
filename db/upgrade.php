@@ -282,6 +282,19 @@ function xmldb_qtype_ordering_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, $newversion, 'qtype', 'ordering');
     }
 
+    //@3strings
+    $newversion = '2022050102';
+    if ($oldversion < $newversion) {
+        $table = new xmldb_table('qtype_ordering_options');
+
+        $field = new xmldb_field('selecttopstatics', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'selectcount');
+        $dbman->add_field($table, $field);
+
+        $field = new xmldb_field('selectbottomstatics', XMLDB_TYPE_INTEGER, '4', null, XMLDB_NOTNULL, null, '0', 'selecttopstatics');
+        $dbman->add_field($table, $field);
+
+    }
+
     return true;
 }
 

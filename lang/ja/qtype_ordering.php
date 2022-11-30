@@ -114,12 +114,13 @@ $string['selectcount_help'] = 'The number of items that will be displayed when t
 $string['selectrandom'] = 'Select a random subset of items';
 $string['selecttype_help'] = 'Choose whether to display all the items or a subset of the items.';
 $string['selecttype'] = 'Item selection type';
-$string['selecttopstatics'] = 'Statics item(Front)'; //@3strings
-$string['selectbottomstatics'] = 'Statics item(Behind)'; //@3strings
-$string['selectcontifuouswithstatic'] = 'Select a contiguous subset of items and static items'; //@3strings
+$string['selecttype'] = 'Item selection type';
+$string['selecttopstatics'] = '固定アイテムの数（前）'; //@3strings
+$string['selectbottomstatics'] = '固定アイテムの数（後）'; //@3strings
+$string['selectcontifuouswithstatic'] = '連続したサブセットと固定アイテム'; //@3strings
 $string['showgrading'] = 'Grading details';
 $string['showgrading_help'] = 'Choose whether to show or hide details of the score calculation when a student reviews a response to this Ordering question.';
 
-$string['staticsnotice'] = 'The gray background item are already in the correct order. Reorder the white background item.'; //@3strings
+$string['staticsnotice'] = '灰色背景部分は既に正しい順に並んでいます。灰色背景部分に繋がるものとして，白背景部分を適切な順に並び替えて下さい。'; //@3strings
 
 $string['vertical'] = 'Vertical';

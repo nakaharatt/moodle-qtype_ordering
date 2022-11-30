@@ -40,6 +40,8 @@ class qtype_ordering_question extends question_graded_automatically {
     const SELECT_RANDOM = 1;
     /** Select contiguous subset of answers */
     const SELECT_CONTIGUOUS = 2;
+    /** Select contiguous subset of answers and stable item */
+    const SELECT_CONTIGUOUS_WITH_STATICS = 3;
 
     /** Show answers in vertical list */
     const LAYOUT_VERTICAL = 0;
@@ -119,7 +121,8 @@ class qtype_ordering_question extends question_graded_automatically {
         // Sanitize "selecttype".
         $selecttype = $options->selecttype;
         $selecttype = max(0, $selecttype);
-        $selecttype = min(2, $selecttype);
+        //$selecttype = min(2, $selecttype);
+        $selecttype = min(3, $selecttype); //@3strings
 
         // Sanitize "selectcount".
         $selectcount = $options->selectcount;
@@ -148,6 +151,28 @@ class qtype_ordering_question extends question_graded_automatically {
 
             case self::SELECT_CONTIGUOUS:
                 $answerids = array_keys($answers);
+                $offset = mt_rand(0, $countanswers - $selectcount);
+                $answerids = array_slice($answerids, $offset, $selectcount);
+                break;
+
+            //@3strings
+            case self::SELECT_CONTIGUOUS_WITH_STATICS:
+                $answerids = array_keys($answers);
+                //前から固定アイテム分を取り除く
+                $topstatics = $options->selecttopstatics;
+                if($topstatics>0){
+                    $countanswers = $countanswers - $topstatics;
+                    $answerids = array_slice($answerids, $topstatics, $countanswers);
+                }
+                //後ろから固定アイテム分を取り除く
+                $bottomstatics = $options->selectbottomstatics;
+                if($bottomstatics>0){
+                    $countanswers = $countanswers - $bottomstatics;
+                    $answerids = array_slice($answerids, 0, $countanswers);
+                }
+                if($options->selectcount == 0){
+                    $selectcount = count($answerids);
+                }
                 $offset = mt_rand(0, $countanswers - $selectcount);
                 $answerids = array_slice($answerids, $offset, $selectcount);
                 break;
@@ -262,30 +287,29 @@ class qtype_ordering_question extends question_graded_automatically {
             if (in_array($answerid, $this->currentresponse)) {
                 $currentposition = array_search($answerid, $this->currentresponse);
             }
-
             $answer = $this->answers[$answerid];
-            $subqid = question_utils::to_plain_text($answer->answer, $answer->answerformat);
+             $subqid = question_utils::to_plain_text($answer->answer, $answer->answerformat);
 
-            // Truncate responses longer than 100 bytes because they cannot be stored in the database.
-            // CAUTION: This will mess up answers which are not unique within the first 100 chars !!
-            $maxbytes = 100;
-            if (strlen($subqid) > $maxbytes) {
-                // If the truncation point is in the middle of a multi-byte unicode char,
-                // we remove the incomplete part with a preg_match() that is unicode aware.
-                $subqid = substr($subqid, 0, $maxbytes);
-                if (preg_match('/^(.|\n)*/u', '', $subqid, $match)) {
-                    $subqid = $match[0];
-                }
-            }
+             // Truncate responses longer than 100 bytes because they cannot be stored in the database.
+             // CAUTION: This will mess up answers which are not unique within the first 100 chars !!
+             $maxbytes = 100;
+             if (strlen($subqid) > $maxbytes) {
+                 // If the truncation point is in the middle of a multi-byte unicode char,
+                 // we remove the incomplete part with a preg_match() that is unicode aware.
+                 $subqid = substr($subqid, 0, $maxbytes);
+                 if (preg_match('/^(.|\n)*/u', '', $subqid, $match)) {
+                     $subqid = $match[0];
+                 }
+             }
 
-            $classifiedresponse[$subqid] = new question_classified_response(
-                $currentposition + 1,
-                get_string('positionx', 'qtype_ordering', $currentposition + 1), 
-                ($currentposition == $position) * $fraction
-            );
-        }
+             $classifiedresponse[$subqid] = new question_classified_response(
+                 $currentposition + 1,
+                 get_string('positionx', 'qtype_ordering', $currentposition + 1), 
+                 ($currentposition == $position) * $fraction
+             );
+         }
 
-        return $classifiedresponse;
+         return $classifiedresponse;
     }
 
     /**
@@ -802,13 +826,14 @@ class qtype_ordering_question extends question_graded_automatically {
         $types = array(
             self::SELECT_ALL        => get_string('selectall',        $plugin),
             self::SELECT_RANDOM     => get_string('selectrandom',     $plugin),
-            self::SELECT_CONTIGUOUS => get_string('selectcontiguous', $plugin)
+            self::SELECT_CONTIGUOUS => get_string('selectcontiguous', $plugin),
+            self::SELECT_CONTIGUOUS_WITH_STATICS => get_string('selectcontifuouswithstatic', $plugin)
         );
         return self::get_types($types, $type);
     }
 
     /**
-     * Returns available values and descriptions for field "layouttype"
+     * Returns availibe values and descriptions for field "layouttype"
      *
      * @param int $type
      * @return array|string array if $type is not specified and single string if $type is specified
@@ -823,7 +848,7 @@ class qtype_ordering_question extends question_graded_automatically {
     }
 
     /**
-     * Returns available values and descriptions for field "gradingtype"
+     * Returns availibe values and descriptions for field "gradingtype"
      *
      * @param int $type
      * @return array|string array if $type is not specified and single string if $type is specified

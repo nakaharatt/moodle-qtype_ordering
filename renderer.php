@@ -105,6 +105,16 @@ class qtype_ordering_renderer extends qtype_with_combined_feedback_renderer {
 
         $result .= html_writer::tag('div', $question->format_questiontext($qa), array('class' => 'qtext'));
 
+
+        if($question->options->selecttopstatics > 0 || $question->options->selectbottomstatics > 0){
+            $result .= html_writer::tag('div',get_string('staticsnotice','qtype_ordering'),array('class'=>'staticsnotice'));
+            if ($class = $question->get_ordering_layoutclass()) {
+                $sortablelist .= ' '.$class; // "vertical" or "horizontal"
+            }
+            $staticlist = 'sortablelist '.$class;
+            $staticitem = 'staticitem';
+        }
+
         $printeditems = false;
         if (count($currentresponse)) {
 
@@ -127,6 +137,31 @@ class qtype_ordering_renderer extends qtype_with_combined_feedback_renderer {
                     $result .= html_writer::start_tag('div', array('class' => 'ablock', 'id' => $ablockid));
                     $result .= html_writer::start_tag('div', array('class' => 'answer ordering'));
                     $result .= html_writer::start_tag('ul',  array('class' => $sortablelist, 'id' => $sortableid));
+
+                    //固定アイテム（上）の描画 @3strings
+                    if($question->options->selecttopstatics > 0){
+                        $topstatics = array_slice($question->answers,0,$question->options->selecttopstatics);
+                        $printeditems = false;
+                        if ($printeditems == false) {
+                            $printeditems = true;
+                            //$result .= html_writer::start_tag('div', array('class' => 'answer ordering'));
+                            //$result .= html_writer::start_tag('ul',  array('class' => $staticlist));
+                        }
+                        foreach($topstatics as $topstatic){
+                            // Format the static item.
+                            $staticanswer = $question->answers[$topstatic->id];
+                            $answertext = $question->format_text($staticanswer->answer, $staticanswer->answerformat,
+                                                                $qa, 'question', 'answer', $topstatic->id);
+                            $params = array('class' => $staticitem);
+                            $result .= html_writer::tag('li', $answertext, $params);
+                        }
+                        /*
+                        if ($printeditems) {
+                            $result .= html_writer::end_tag('ul');
+                            $result .= html_writer::end_tag('div'); // Close answer tag.
+                        }
+                        */
+                    }
                 }
 
                 // Set the CSS class and correctness img for this response.
@@ -165,14 +200,46 @@ class qtype_ordering_renderer extends qtype_with_combined_feedback_renderer {
         }
 
         if ($printeditems) {
+            //固定アイテム（下）の描画 @3strings
+            if($question->options->selectbottomstatics > 0){
+                $ofset = count($question->answers) - $question->options->selectbottomstatics;
+                $bottomstatics = array_slice($question->answers,$ofset,$question->options->selectbottomstatics);
+                //$printeditems = false;
+                /*
+                if ($printeditems == false) {
+                    $printeditems = true;
+                    $result .= html_writer::start_tag('div', array('class' => 'answer ordering'));
+                    $result .= html_writer::start_tag('ul',  array('class' => $staticlist));
+                }
+                */
+                foreach($bottomstatics as $topstatic){
+                    // Format the static item.
+                    $staticanswer = $question->answers[$topstatic->id];
+                    $answertext = $question->format_text($staticanswer->answer, $staticanswer->answerformat,
+                                                        $qa, 'question', 'answer', $topstatic->id);
+                    $params = array('class' => $staticitem);
+                    $result .= html_writer::tag('li', $answertext, $params);
+                }
+                /*
+                if ($printeditems) {
+                    $result .= html_writer::end_tag('ul');
+                    $result .= html_writer::end_tag('div'); // Close answer tag.
+                }
+                */
+            }
+            
             $result .= html_writer::end_tag('ul');
             $result .= html_writer::end_tag('div'); // Close answer tag.
+
+            
             $result .= html_writer::end_tag('div'); // Close ablock tag.
 
             $result .= html_writer::empty_tag('input', array('type'  => 'hidden',
                                                              'name'  => $responsename,
                                                              'id'    => $responseid,
                                                              'value' => implode(',', $md5keys)));
+
+
         }
 
         return $result;

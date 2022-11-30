@@ -34,6 +34,15 @@
     box-shadow: 0 0 5px 5px rgba(255, 255, 150, 1);
 }
 
+/* @3strings */
+.que.ordering .sortablelist li.staticitem {
+    position         : relative;
+    background-color : #eee;
+}
+.que.ordering .staticsnotice{
+    font-size:smaller;
+}
+
 .que.ordering .sortablelist.numbering123 li,
 .que.ordering .sortablelist.numberingabc li,
 .que.ordering .sortablelist.numberingABCD li,

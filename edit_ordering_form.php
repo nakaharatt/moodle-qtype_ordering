@@ -103,6 +103,32 @@ class qtype_ordering_edit_form extends question_edit_form {
         $mform->addHelpButton($name, $name, $plugin);
         $mform->setDefault($name, 6);
 
+        //Field for static before item. @3strings
+        $name = 'selecttopstatics';
+        $label = get_string($name, $plugin);
+        $options = array(0 => 0);
+        for ($i = 1; $i <= 20; $i++) {
+            $options[$i] = $i;
+        }
+        $mform->addElement('select', $name, $label, $options);
+        $mform->hideIf($name, 'selecttype', 'noteq', 3);
+        $mform->disabledIf($name, 'selecttype', 'noteq', 3);
+        //$mform->addHelpButton($name, $name, $plugin);
+        $mform->setDefault($name, 0);
+
+        //Field for static after item. @3strings
+        $name = 'selectbottomstatics';
+        $label = get_string($name, $plugin);
+        $options = array(0 => 0);
+        for ($i = 1; $i <= 20; $i++) {
+            $options[$i] = $i;
+        }
+        $mform->addElement('select', $name, $label, $options);
+        $mform->hideIf($name, 'selecttype', 'noteq', 3);
+        $mform->disabledIf($name, 'selecttype', 'noteq', 3);
+        //$mform->addHelpButton($name, $name, $plugin);
+        $mform->setDefault($name, 0);
+
         // Field for gradingtype.
         $name = 'gradingtype';
         $label = get_string($name, $plugin);
@@ -343,6 +369,8 @@ class qtype_ordering_edit_form extends question_edit_form {
             'layouttype'  => qtype_ordering_question::LAYOUT_VERTICAL,
             'selecttype'  => qtype_ordering_question::SELECT_ALL,
             'selectcount' => 0, // 0 means ALL.
+            'selecttopstatics' => 0, // @3strings
+            'selectbottomstatics' => 0, // @3strings
             'gradingtype' => qtype_ordering_question::GRADING_ABSOLUTE_POSITION,
             'showgrading' => 1,  // 1 means SHOW.
             'numberingstyle' => qtype_ordering_question::NUMBERING_STYLE_DEFAULT

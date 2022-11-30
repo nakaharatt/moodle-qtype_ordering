@@ -52,6 +52,7 @@ class backup_qtype_ordering_plugin extends backup_qtype_plugin {
 
         // Now create the qtype own structures.
         $fields = array('layouttype', 'selecttype', 'selectcount',
+                        'selecttopstatics', 'selectbottomstatics', //@3strings
                         'gradingtype', 'showgrading', 'numberingstyle',
                         'correctfeedback', 'correctfeedbackformat',
                         'incorrectfeedback', 'incorrectfeedbackformat',

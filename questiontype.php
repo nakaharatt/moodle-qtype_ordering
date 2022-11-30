@@ -54,6 +54,7 @@ class qtype_ordering extends question_type {
     public function extra_question_fields() {
         return array('qtype_ordering_options',
                      'layouttype', 'selecttype', 'selectcount',
+                     'selecttopstatics', 'selectbottomstatics', //@3strings
                      'gradingtype', 'showgrading', 'numberingstyle');
     }
 
@@ -186,6 +187,8 @@ class qtype_ordering extends question_type {
             'layouttype' => $question->layouttype,
             'selecttype' => $question->selecttype,
             'selectcount' => $question->selectcount,
+            'selecttopstatics' => $question->selecttopstatics,
+            'selectbottomstatics' => $question->selectbottomstatics,
             'gradingtype' => $question->gradingtype,
             'showgrading' => $question->showgrading,
             'numberingstyle' => $question->numberingstyle
@@ -259,19 +262,8 @@ class qtype_ordering extends question_type {
                         get_string('positionx', 'qtype_ordering', $i),
                         ($i === $position) / $itemcount);
             }
-
-            $subqid = question_utils::to_plain_text($answer->answer, $answer->answerformat);
-
-            // make sure $subqid is no more than 100 bytes
-            $maxbytes = 100;
-            if (strlen($subqid) > $maxbytes) {
-                $subqid = substr($subqid, 0, $maxbytes);
-                if (preg_match('/^(.|\n)*/u', '', $subqid, $match)) {
-                    $subqid = $match[0]; // incomplete UTF-8 chars will be removed
-                }
-            }
-
-            $responseclasses[$subqid] = $classes;
+            $responseclasses[question_utils::to_plain_text(
+                    $answer->answer, $answer->answerformat)] = $classes;
         }
 
         return $responseclasses;
@@ -353,7 +345,9 @@ class qtype_ordering extends question_type {
         $selectcount = '\d+';
         $selecttype  = '(?:ALL|EXACT|'.
                           'RANDOM|REL|'.
-                          'CONTIGUOUS|CONTIG)?';
+                          'CONTIGUOUSWITHSTATICS|CONTIGUOUS|CONTIG)?';
+        $selecttopstatics = '\d+';
+        $selectbottomstatics = '\d+';
         $layouttype  = '(?:HORIZONTAL|HORI|H|1|'.
                           'VERTICAL|VERT|V|0)?';
         $gradingtype = '(?:ALL_OR_NOTHING|'.
@@ -371,8 +365,12 @@ class qtype_ordering extends question_type {
         $numberingstyle = '(?:none|123|abc|ABCD|iii|IIII)?';
         $search = '/^\s*>\s*('.$selectcount.')\s*'.
                            '('.$selecttype.')\s*'.
+                           '('.$selecttopstatics.')\s*'.
+                           '('.$selectbottomstatics.')\s*'.
                            '('.$layouttype.')\s*'.
                            '('.$gradingtype.')\s*'.
+                           '('.$showgrading.')\s*'.
+                           '('.$numberingstyle.')\s*'.
                            '('.$showgrading.')\s*'.
                            '('.$numberingstyle.')\s*'.
                            '(.*?)\s*$/s';
@@ -389,15 +387,17 @@ class qtype_ordering extends question_type {
         if (! preg_match($search, $extra, $matches)) {
             return false; // Format not recognized.
         }
-
+        
         $selectcount = trim($matches[1]);
         $selecttype = trim($matches[2]);
         $layouttype = trim($matches[3]);
         $gradingtype = trim($matches[4]);
         $showgrading = trim($matches[5]);
         $numberingstyle = trim($matches[6]);
+        $selecttopstatics = trim($matches[7]);
+        $selectbottomstatics = trim($matches[8]);
 
-        $answers = preg_split('/[\r\n]+/', $matches[7]);
+        $answers = preg_split('/[\r\n]+/', $matches[9]);
         $answers = array_filter($answers);
 
         if (empty($question)) {
@@ -452,7 +452,20 @@ class qtype_ordering extends question_type {
         } else {
             $selectcount = min(6, count($answers));
         }
-        $this->set_options_for_import($question, $layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle);
+
+        //Static item num
+        if (is_numeric($selecttopstatics) && $selecttopstatics <= count($answers)) {
+            $selecttopstatics = intval($selecttopstatics);
+        } else {
+            $selecttopstatics = 0;
+        }
+        if (is_numeric($selectbottomstatics) && $selectbottomstatics <= count($answers)) {
+            $selectbottomstatics = intval($selectbottomstatics);
+        } else {
+            $selectbottomstatics = 0;
+        }
+
+        $this->set_options_for_import($question, $layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle, $selecttopstatics, $selectbottomstatics);
 
         // Remove blank items.
         $answers = array_map('trim', $answers);
@@ -526,6 +539,10 @@ class qtype_ordering extends question_type {
             case qtype_ordering_question::SELECT_CONTIGUOUS:
                 $selecttype = 'CONTIGUOUS';
                 break;
+                break;
+            case qtype_ordering_question::SELECT_CONTIGUOUS_WITH_STATICS:
+                $selecttype = 'CONTIGUOUSWITHSTATICS';
+                break;
             default:
                 $selecttype = ''; // Shouldn't happen !!
         }
@@ -582,7 +599,10 @@ class qtype_ordering extends question_type {
         // Note: this used to be (selectcount + 2).
         $selectcount = $question->options->selectcount;
 
-        return array($layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle);
+        $selecttopstatics = $question->options->selecttopstatics;
+        $selectbottomstatics = $question->options->selectbottomstatics;
+
+        return array($layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle, $selecttopstatics, $selectbottomstatics);
     }
 
     /**
@@ -612,9 +632,9 @@ class qtype_ordering extends question_type {
 
         $output .= $question->questiontext.'{';
 
-        list($layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle) =
+        list($layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle, $selecttopstatics, $selectbottomstatics) =
                 $this->extract_options_for_export($question);
-        $output .= ">$selectcount $selecttype $layouttype $gradingtype $showgrading $numberingstyle".PHP_EOL;
+        $output .= ">$selectcount $selecttype $selecttopstatics $selectbottomstatics $layouttype $gradingtype $showgrading $numberingstyle".PHP_EOL;
 
         foreach ($question->options->answers as $answer) {
             $output .= $answer->answer.PHP_EOL;
@@ -636,13 +656,15 @@ class qtype_ordering extends question_type {
         global $CFG;
         require_once($CFG->dirroot.'/question/type/ordering/question.php');
 
-        list($layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle) =
+        list($layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle, $selecttopstatics, $selectbottomstatics) =
                 $this->extract_options_for_export($question);
 
         $output = '';
         $output .= "    <layouttype>$layouttype</layouttype>\n";
         $output .= "    <selecttype>$selecttype</selecttype>\n";
         $output .= "    <selectcount>$selectcount</selectcount>\n";
+        $output .= "    <selecttopstatics>$selecttopstatics</selecttopstatics>\n";
+        $output .= "    <selectbottomstatics>$selectbottomstatics</selectbottomstatics>\n";
         $output .= "    <gradingtype>$gradingtype</gradingtype>\n";
         $output .= "    <showgrading>$showgrading</showgrading>\n";
         $output .= "    <numberingstyle>$numberingstyle</numberingstyle>\n";
@@ -694,6 +716,7 @@ class qtype_ordering extends question_type {
 
         // Extra fields - "selecttype" and "selectcount"
         // (these fields used to be called "logical" and "studentsee").
+        //TODO: staticsがNULLでもimportできるようにしないとならない
         if (isset($data['#']['selecttype'])) {
             $selecttype = 'selecttype';
             $selectcount = 'selectcount';
@@ -704,10 +727,12 @@ class qtype_ordering extends question_type {
         $layouttype = $format->getpath($data, array('#', 'layouttype', 0, '#'), 'VERTICAL');
         $selecttype = $format->getpath($data, array('#', $selecttype, 0, '#'), 'RANDOM');
         $selectcount = $format->getpath($data, array('#', $selectcount, 0, '#'), 6);
+        $selecttopstatics = $format->getpath($data, array('#', 'selecttopstatics', 0, '#'), 0);
+        $selectbottomstatics = $format->getpath($data, array('#', 'selectbottomstatics', 0, '#'), 0);
         $gradingtype = $format->getpath($data, array('#', 'gradingtype', 0, '#'), 'RELATIVE');
         $showgrading = $format->getpath($data, array('#', 'showgrading', 0, '#'), '1');
         $numberingstyle = $format->getpath($data, array('#', 'numberingstyle', 0, '#'), '1');
-        $this->set_options_for_import($newquestion, $layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle);
+        $this->set_options_for_import($newquestion, $layouttype, $selecttype, $selectcount, $gradingtype, $showgrading, $numberingstyle, $selecttopstatics, $selectbottomstatics);
 
         $newquestion->answer = array();
         $newquestion->answerformat = array();
@@ -770,7 +795,8 @@ class qtype_ordering extends question_type {
      * @param string $show the grading details or not
      */
     public function set_options_for_import(&$question, $layouttype, $selecttype, $selectcount, 
-                                                       $gradingtype, $showgrading, $numberingstyle) {
+                                                       $gradingtype, $showgrading, $numberingstyle
+                                                       , $selecttopstatics, $selectbottomstatics) {
 
         // set "layouttype" option
         switch (strtoupper($layouttype)) {
@@ -810,6 +836,10 @@ class qtype_ordering extends question_type {
             case 'CONTIG':
                 $question->selecttype = qtype_ordering_question::SELECT_CONTIGUOUS;
                 break;
+                
+            case 'CONTIGUOUSWITHSTATICS':
+                $question->selecttype = qtype_ordering_question::SELECT_CONTIGUOUS_WITH_STATICS;
+                break;
 
             default:
                 $question->selecttype = qtype_ordering_question::SELECT_RANDOM;
@@ -820,6 +850,17 @@ class qtype_ordering extends question_type {
             $question->selectcount = intval($selectcount);
         } else {
             $question->selectcount = 3; // default
+        }
+        
+        if (is_numeric($selecttopstatics)) {
+            $question->selecttopstatics = intval($selecttopstatics);
+        } else {
+            $question->selecttopstatics = 0; // default
+        }
+        if (is_numeric($selectbottomstatics)) {
+            $question->selectbottomstatics = intval($selectbottomstatics);
+        } else {
+            $question->selectbottomstatics = 0; // default
         }
 
         // Set "gradingtype" option.
