@@ -105,8 +105,10 @@ class qtype_ordering_renderer extends qtype_with_combined_feedback_renderer {
 
         $result .= html_writer::tag('div', $question->format_questiontext($qa), array('class' => 'qtext'));
 
+        $withstatics = false;
+        if($question->options->selecttype == qtype_ordering_question::SELECT_CONTIGUOUS_WITH_STATICS) $withstatics = true;
 
-        if($question->options->selecttopstatics > 0 || $question->options->selectbottomstatics > 0){
+        if($withstatics && ($question->options->selecttopstatics > 0 || $question->options->selectbottomstatics > 0)){
             $result .= html_writer::tag('div',get_string('staticsnotice','qtype_ordering'),array('class'=>'staticsnotice'));
             if ($class = $question->get_ordering_layoutclass()) {
                 $sortablelist .= ' '.$class; // "vertical" or "horizontal"
@@ -139,7 +141,7 @@ class qtype_ordering_renderer extends qtype_with_combined_feedback_renderer {
                     $result .= html_writer::start_tag('ul',  array('class' => $sortablelist, 'id' => $sortableid));
 
                     //固定アイテム（上）の描画 @3strings
-                    if($question->options->selecttopstatics > 0){
+                    if($withstatics && $question->options->selecttopstatics > 0){
                         $topstatics = array_slice($question->answers,0,$question->options->selecttopstatics);
                         $printeditems = false;
                         if ($printeditems == false) {
@@ -201,7 +203,7 @@ class qtype_ordering_renderer extends qtype_with_combined_feedback_renderer {
 
         if ($printeditems) {
             //固定アイテム（下）の描画 @3strings
-            if($question->options->selectbottomstatics > 0){
+            if($withstatics && $question->options->selectbottomstatics > 0){
                 $ofset = count($question->answers) - $question->options->selectbottomstatics;
                 $bottomstatics = array_slice($question->answers,$ofset,$question->options->selectbottomstatics);
                 //$printeditems = false;

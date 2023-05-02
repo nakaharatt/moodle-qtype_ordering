@@ -283,7 +283,7 @@ function xmldb_qtype_ordering_upgrade($oldversion) {
     }
 
     //@3strings
-    $newversion = '2022070804';
+    $newversion = '2022070809';
     if ($oldversion < $newversion) {
         $table = new xmldb_table('qtype_ordering_options');
 

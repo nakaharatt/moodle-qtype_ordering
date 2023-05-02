@@ -424,7 +424,10 @@ class qtype_ordering_edit_form extends question_edit_form {
             case 0: $errors['answer[0]'] = get_string('notenoughanswers', $plugin, 2);
             case 1: $errors['answer[1]'] = get_string('notenoughanswers', $plugin, 2);
         }
-
+        
+        if($data['selecttype'] == qtype_ordering_question::SELECT_CONTIGUOUS_WITH_STATICS && $answercount - ($data['selecttopstatics'] + $data['selectbottomstatics']) < 2){
+            $errors["selectcount"] = get_string('notenoughanswers', $plugin, 2);
+        }
         // If adding a new ordering question, update defaults.
         if (empty($errors) && empty($data['id'])) {
             $fields = array('layouttype', 'selecttype', 'selectcount',

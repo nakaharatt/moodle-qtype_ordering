@@ -118,23 +118,30 @@ class qtype_ordering_question extends question_graded_automatically {
 
         $countanswers = count($answers);
 
+        
         // Sanitize "selecttype".
         $selecttype = $options->selecttype;
         $selecttype = max(0, $selecttype);
         //$selecttype = min(2, $selecttype);
-        $selecttype = min(3, $selecttype); //@3strings
+        $selecttype = min(3, $selecttype); //for SELECT_CONTIGUOUS_WITH_STATICS
 
         // Sanitize "selectcount".
         $selectcount = $options->selectcount;
-        $selectcount = max(3, $selectcount);
-        $selectcount = min($countanswers, $selectcount);
-
+        if($selecttype == self::SELECT_CONTIGUOUS_WITH_STATICS){
+            $topstatics = $options->selecttopstatics;
+            $bottomstatics = $options->selectbottomstatics;
+            $selectcount = $countanswers - $topstatics - $bottomstatics;
+        }else{
+            $selectcount = max(3, $selectcount);
+            $selectcount = min($countanswers, $selectcount);
+        }
+        
         // Ensure consistency between "selecttype" and "selectcount".
         switch (true) {
             case ($selecttype == self::SELECT_ALL):
                 $selectcount = $countanswers;
                 break;
-            case ($selectcount == $countanswers):
+            case ($selectcount == $countanswers): 
                 $selecttype = self::SELECT_ALL;
                 break;
         }
@@ -159,13 +166,11 @@ class qtype_ordering_question extends question_graded_automatically {
             case self::SELECT_CONTIGUOUS_WITH_STATICS:
                 $answerids = array_keys($answers);
                 //前から固定アイテム分を取り除く
-                $topstatics = $options->selecttopstatics;
                 if($topstatics>0){
                     $countanswers = $countanswers - $topstatics;
                     $answerids = array_slice($answerids, $topstatics, $countanswers);
                 }
                 //後ろから固定アイテム分を取り除く
-                $bottomstatics = $options->selectbottomstatics;
                 if($bottomstatics>0){
                     $countanswers = $countanswers - $bottomstatics;
                     $answerids = array_slice($answerids, 0, $countanswers);

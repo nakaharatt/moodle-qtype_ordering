@@ -77,7 +77,7 @@ $string['longestorderedsubset'] = 'Longest ordered subset';
 
 $string['noresponsedetails'] = 'Sorry, no details of the response to this question are available.';
 $string['noscore'] = 'No score';
-$string['notenoughanswers'] = 'Ordering questions must have more than {$a} answers.';
+$string['notenoughanswers'] = 'Ordering questions must have more than {$a} draggable answers.';
 
 $string['numberingstyle'] = 'Number the choices?';
 $string['numberingstylenone'] = 'No numbering';
